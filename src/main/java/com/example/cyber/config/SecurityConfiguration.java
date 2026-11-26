@@ -12,12 +12,23 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.core.annotation.Order;
 import com.example.cyber.auth.infrastructure.DeviceVerificationFilter;
 
 import java.util.List;
 
 @Configuration
 public class SecurityConfiguration {
+    @Bean
+    @Order(1)
+    SecurityFilterChain publicPagesSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher("/", "/error", "/favicon.ico")
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+                .csrf(csrf -> csrf.disable())
+                .build();
+    }
+
     @Bean
     CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,https://cyber-frontend-nu.vercel.app/}") List<String> allowedOrigins) {
