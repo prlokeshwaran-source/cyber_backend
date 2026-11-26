@@ -64,8 +64,10 @@ POST /api/v1/accounts
 GET  /api/v1/accounts
 GET  /api/v1/accounts/{accountId}
 
-{"currency":"INR"}
+{"currency":"INR","initialAmount":30000.00}
 ```
+
+`initialAmount` is optional and defaults to `0.00`. It accepts non-negative amounts with up to two decimal places. A nonzero opening amount is recorded as a deposit in transaction history. This is a demo balance feature and does not move real money.
 
 Include the `Authorization` header with each account request.
 

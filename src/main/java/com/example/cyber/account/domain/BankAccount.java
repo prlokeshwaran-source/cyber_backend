@@ -21,10 +21,17 @@ public class BankAccount {
     protected BankAccount() {}
 
     public BankAccount(String ownerEmail, String currency) {
+        this(ownerEmail, currency, BigDecimal.ZERO);
+    }
+
+    public BankAccount(String ownerEmail, String currency, BigDecimal initialAmount) {
         this.publicId = UUID.randomUUID();
         this.ownerEmail = ownerEmail;
         this.currency = currency;
-        this.balance = BigDecimal.ZERO.setScale(2);
+        if (initialAmount == null || initialAmount.scale() > 2 || initialAmount.signum() < 0) {
+            throw new IllegalArgumentException("Initial amount must be non-negative with at most two decimal places");
+        }
+        this.balance = initialAmount.setScale(2);
     }
 
     public String getId() { return id; }
