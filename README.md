@@ -34,6 +34,8 @@ On macOS or Linux:
 
 The application listens on port `8080` by default (or the `PORT` value supplied by Render) and persists customers, accounts, and transfers in MongoDB. Protected endpoints currently use HTTP Basic with the registered email and password. JWT authentication is not implemented yet; `JWT_SECRET` is reserved for that addition. Use HTTPS outside local development. Transfers require an Atlas replica set so MongoDB multi-document transactions are available.
 
+Account and transaction endpoints also require a trusted device. Send a persistent random `X-Device-Id` value (at least 32 characters; use 32 random bytes encoded as hex). A new device receives HTTP 403 and triggers a one-time approval code email. Submit the emailed challenge ID and code to `/api/v1/auth/device-approvals`, with `approve: true` to trust it or `approve: false` to deny it. Codes expire after 10 minutes and five incorrect attempts disable a challenge. Configure `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, and `APP_SECURITY_EMAIL_FROM` to send approval emails.
+
 ### Deploy on Render with Docker
 
 Create a **Web Service** from this repository and choose **Docker** as the runtime. Render will build the root `Dockerfile` and provide `PORT` at runtime. Add these environment variables in the Render service settings:
@@ -41,6 +43,7 @@ Create a **Web Service** from this repository and choose **Docker** as the runti
 - `MONGODB_URI`: your MongoDB Atlas connection string.
 - `JWT_SECRET`: a randomly generated secret of at least 32 bytes, even though JWT authentication is not active yet.
 - `CORS_ALLOWED_ORIGINS`: optional comma-separated frontend origins allowed to call the API. Include the scheme and port if needed, and do not add a trailing slash. Defaults include local development and `https://cyber-frontend-nu.vercel.app`.
+- SMTP variables listed above: required for new-device email approvals.
 
 Keep both values in Render's environment settings; do not put secrets in the Dockerfile or commit them to Git. Set Atlas network access to permit connections from the Render service. Use a replica set compatible with MongoDB transactions for transfers.
 
@@ -53,6 +56,15 @@ POST /api/v1/auth/register
 Content-Type: application/json
 
 {"email":"person@example.com","password":"use-a-long-unique-password"}
+```
+
+Approve or deny a new-device request (public; requires possession of the emailed code):
+
+```http
+POST /api/v1/auth/device-approvals
+Content-Type: application/json
+
+{"challengeId":"<challenge ID from email>","code":"12345678","approve":true}
 ```
 
 Create and list accounts (HTTP Basic authentication required; accounts are scoped to the authenticated customer):

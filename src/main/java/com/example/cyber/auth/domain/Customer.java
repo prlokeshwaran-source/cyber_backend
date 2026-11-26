@@ -4,6 +4,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Document("customers")
 public class Customer {
@@ -15,6 +17,7 @@ public class Customer {
     private Instant createdAt;
     private int failedLoginAttempts;
     private Instant lockedUntil;
+    private List<String> trustedDeviceHashes = new ArrayList<>();
 
     protected Customer() {}
 
@@ -35,4 +38,8 @@ public class Customer {
         if (failedLoginAttempts >= 5) lockedUntil = Instant.now().plusSeconds(900);
     }
     public void recordSuccessfulLogin() { failedLoginAttempts = 0; lockedUntil = null; }
+    public boolean trustsDevice(String deviceHash) { return trustedDeviceHashes.contains(deviceHash); }
+    public void trustDevice(String deviceHash) {
+        if (!trustedDeviceHashes.contains(deviceHash)) trustedDeviceHashes.add(deviceHash);
+    }
 }
