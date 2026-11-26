@@ -53,7 +53,13 @@ public class SecurityConfiguration {
                         .requestMatchers("/", "/error", "/favicon.ico").permitAll()
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/device-approvals", "/api/v1/security/url-checks").permitAll()
                         .anyRequest().authenticated())
-                .httpBasic(Customizer.withDefaults())
+                .httpBasic(basic -> basic.authenticationEntryPoint((request, response, exception) -> {
+                    response.setStatus(org.springframework.http.HttpStatus.UNAUTHORIZED.value());
+                    response.setContentType(org.springframework.http.MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write("{\"type\":\"about:blank\",\"title\":\"Unauthorized\","
+                            + "\"status\":401,\"detail\":\"Valid HTTP Basic credentials are required\"}");
+                }))
                 .addFilterAfter(deviceVerificationFilter, BasicAuthenticationFilter.class)
                 .build();
     }

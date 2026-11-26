@@ -43,7 +43,7 @@ public class DeviceApprovalService {
             emailSender.sendDeviceApproval(email, approval.getId(), code, ip, expiry.toString());
         } catch (RuntimeException exception) {
             approvals.delete(approval);
-            throw exception;
+            throw new DeviceApprovalDeliveryException(exception);
         }
     }
 
