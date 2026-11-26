@@ -39,6 +39,7 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/", "/error", "/favicon.ico").permitAll()
                         .requestMatchers("/api/v1/auth/register", "/api/v1/auth/device-approvals", "/api/v1/security/url-checks").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
