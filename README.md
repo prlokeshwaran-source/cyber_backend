@@ -65,10 +65,11 @@ GET  /api/v1/accounts/{accountId}
 {"currency":"INR"}
 ```
 
-Transfer between accounts (HTTP Basic authentication required; the source must belong to the authenticated customer; both accounts must use the same currency):
+Transfer between accounts (HTTP Basic authentication required; the source must belong to the authenticated customer; both accounts must use the same currency). Supply a stable, unique `Idempotency-Key` for each intended transfer and reuse it for retries:
 
 ```http
 POST /api/v1/transactions/transfers
+Idempotency-Key: 8b3ed41a-49e1-4635-9bb3-e7bc0c0e7f08
 
 {
   "sourceAccountId":"<source UUID>",
@@ -77,7 +78,7 @@ POST /api/v1/transactions/transfers
 }
 ```
 
-Deposits are omitted because real deposits must reconcile with a trusted funding provider. MFA, refresh tokens, idempotency keys, a production database, and a complete immutable ledger are also not implemented. Do not use this starter to hold real funds.
+Deposits are omitted because real deposits must reconcile with a trusted funding provider. Transfer idempotency is supported: repeating a request with the same key and same transfer returns the original response; reusing that key for different transfer details returns HTTP 409. Account writes use optimistic version checks and return HTTP 409 if a concurrent update wins, so clients should retry using the same key. MFA, refresh tokens, a production database, and a complete immutable ledger are not implemented. Do not use this starter to hold real funds.
 
 Account endpoints are public. All callers share the same `public` account owner, so anyone can create, list, and view those accounts. This is suitable only for a demo; do not deploy it with real or sensitive account data.
 

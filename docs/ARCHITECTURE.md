@@ -6,6 +6,8 @@ This document defines the structure for the secure banking backend. The current 
 
 The design uses a **modular monolith**: features live in separate packages in one deployable application. Keep dependencies pointing inward from HTTP adapters toward application logic and domain rules. Avoid making one giant service or allowing one feature to reach into another feature's persistence layer.
 
+Transfer idempotency is implemented. Each authenticated owner and idempotency key has a durable record saved atomically with the transfer. Reusing the key and same transfer returns the original result; reusing it with different details is rejected. Account documents use optimistic versioning so simultaneous balance updates cannot silently overwrite one another.
+
 ## Proposed package structure
 
 Keep the existing base package, `com.example.cyber`:

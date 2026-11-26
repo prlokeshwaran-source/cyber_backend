@@ -10,6 +10,8 @@ import java.util.UUID;
 public class BankAccount {
     @Id
     private String id;
+    @org.springframework.data.annotation.Version
+    private Long version;
     @Indexed(unique = true)
     private UUID publicId;
     private String ownerEmail;
