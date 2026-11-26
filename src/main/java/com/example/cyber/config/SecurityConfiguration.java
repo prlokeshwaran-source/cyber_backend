@@ -54,6 +54,7 @@ public class SecurityConfiguration {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/", "/error", "/favicon.ico").permitAll()
                         .requestMatchers("/api/v1/auth/register", "/api/v1/security/url-checks",
+                                "/api/v1/security/email-checks",
                                 "/api/v1/security/transaction-signing-key").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(basic -> basic.authenticationEntryPoint((request, response, exception) -> {

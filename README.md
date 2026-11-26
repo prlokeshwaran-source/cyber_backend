@@ -107,7 +107,7 @@ GET  /api/v1/transactions
 {"accountId":"<account UUID>","amount":25.00}
 ```
 
-The deposit route directly credits a demo balance. It is not connected to a funding provider and must not be exposed as a real-money deposit flow. URL risk checks are available at `POST /api/v1/security/url-checks` with `{"url":"https://example.com"}`; they are heuristic and do not fetch or guarantee the safety of a URL. Five failed authentication attempts temporarily lock the customer account for 15 minutes.
+The deposit route directly credits a demo balance. It is not connected to a funding provider and must not be exposed as a real-money deposit flow. URL risk checks are available at `POST /api/v1/security/url-checks` with `{"url":"https://example.com"}`. Email checks are available at `POST /api/v1/security/email-checks` with `{"sender":"alerts@example.com","subject":"Verify your account","body":"..."}`. Both use transparent heuristic rules and do not consult live reputation feeds or guarantee detection. Five failed authentication attempts temporarily lock the customer account for 15 minutes.
 
 ```http
 GET /api/v1/security/transaction-signing-key
