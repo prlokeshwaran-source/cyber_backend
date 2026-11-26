@@ -5,6 +5,7 @@ import com.example.cyber.account.infrastructure.AccountRepository;
 import com.example.cyber.common.exception.ResourceNotFoundException;
 import com.example.cyber.transaction.api.TransactionResponse;
 import com.example.cyber.transaction.api.TransferRequest;
+import com.example.cyber.transaction.api.BalanceChangeRequest;
 import com.example.cyber.transaction.domain.BankTransaction;
 import com.example.cyber.transaction.domain.TransactionType;
 import com.example.cyber.transaction.domain.TransferIdempotencyRecord;
@@ -67,6 +68,32 @@ public class TransferService {
         BankTransaction transaction = transactionRepository.save(new BankTransaction(
                 source.getPublicId(), destination.getPublicId(), ownerEmail,
                 request.amount(), source.getCurrency(), TransactionType.TRANSFER));
+        TransactionResponse response = new TransactionResponse(transaction.getId(), transaction.getType(),
+                transaction.getSourceAccountId(), transaction.getDestinationAccountId(),
+                transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt());
+        idempotencyRepository.save(new TransferIdempotencyRecord(recordId, requestHash, response));
+        return response;
+    }
+
+    @Transactional
+    public TransactionResponse changeBalance(String ownerEmail, String idempotencyKey,
+                                             BalanceChangeRequest request, TransactionType type) {
+        String recordId = digest(ownerEmail + "\u0000" + type + "\u0000" + idempotencyKey);
+        String requestHash = digest(request.accountId() + "\u0000" + request.amount().stripTrailingZeros().toPlainString());
+        var previous = idempotencyRepository.findById(recordId);
+        if (previous.isPresent()) {
+            if (!previous.get().getRequestHash().equals(requestHash)) throw new IdempotencyConflictException();
+            return previous.get().getResponse();
+        }
+        BankAccount account = accountRepository.findByPublicIdAndOwnerEmail(request.accountId(), ownerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+        if (type == TransactionType.DEPOSIT) account.credit(request.amount());
+        else account.debit(request.amount());
+        accountRepository.save(account);
+        BankTransaction transaction = transactionRepository.save(new BankTransaction(
+                type == TransactionType.DEPOSIT ? null : account.getPublicId(),
+                type == TransactionType.DEPOSIT ? account.getPublicId() : null,
+                ownerEmail, request.amount(), account.getCurrency(), type));
         TransactionResponse response = new TransactionResponse(transaction.getId(), transaction.getType(),
                 transaction.getSourceAccountId(), transaction.getDestinationAccountId(),
                 transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt());

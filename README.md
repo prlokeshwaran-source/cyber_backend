@@ -55,7 +55,7 @@ Content-Type: application/json
 {"email":"person@example.com","password":"use-a-long-unique-password"}
 ```
 
-Create and list accounts (public, no login required):
+Create and list accounts (HTTP Basic authentication required; accounts are scoped to the authenticated customer):
 
 ```http
 POST /api/v1/accounts
@@ -65,7 +65,7 @@ GET  /api/v1/accounts/{accountId}
 {"currency":"INR"}
 ```
 
-Transfer between accounts (HTTP Basic authentication required; the source must belong to the authenticated customer; both accounts must use the same currency). Supply a stable, unique `Idempotency-Key` for each intended transfer and reuse it for retries:
+Transfers, deposits, withdrawals, and transaction history require HTTP Basic authentication. Supply a stable, unique `Idempotency-Key` for each intended money movement and reuse it for retries:
 
 ```http
 POST /api/v1/transactions/transfers
@@ -78,9 +78,19 @@ Idempotency-Key: 8b3ed41a-49e1-4635-9bb3-e7bc0c0e7f08
 }
 ```
 
-Deposits are omitted because real deposits must reconcile with a trusted funding provider. Transfer idempotency is supported: repeating a request with the same key and same transfer returns the original response; reusing that key for different transfer details returns HTTP 409. Account writes use optimistic version checks and return HTTP 409 if a concurrent update wins, so clients should retry using the same key. MFA, refresh tokens, a production database, and a complete immutable ledger are not implemented. Do not use this starter to hold real funds.
+```http
+POST /api/v1/transactions/deposits
+POST /api/v1/transactions/withdrawals
+GET  /api/v1/transactions
 
-Account endpoints are public. All callers share the same `public` account owner, so anyone can create, list, and view those accounts. This is suitable only for a demo; do not deploy it with real or sensitive account data.
+{"accountId":"<account UUID>","amount":25.00}
+```
+
+The deposit route directly credits a demo balance. It is not connected to a funding provider and must not be exposed as a real-money deposit flow. URL risk checks are available at `POST /api/v1/security/url-checks` with `{"url":"https://example.com"}`; they are heuristic and do not fetch or guarantee the safety of a URL. Five failed authentication attempts temporarily lock the customer account for 15 minutes.
+
+Transfer, deposit, and withdrawal retries are idempotent: repeating a request with the same key and same details returns the original response; reusing that key for different details returns HTTP 409. Account writes use optimistic version checks and return HTTP 409 if a concurrent update wins. The deposit route is a demo credit operation; production deposits require a trusted funding provider and reconciliation. TOTP/MFA, JWT and refresh tokens, recovery, beneficiary controls, digital signatures, encryption key management, fraud review workflows, and production audit/monitoring are not implemented. Do not use this starter to hold real funds.
+
+Account endpoints require authentication and only expose accounts owned by the authenticated customer.
 
 ### Package the application
 

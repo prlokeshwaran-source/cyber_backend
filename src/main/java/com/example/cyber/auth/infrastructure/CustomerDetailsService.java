@@ -20,6 +20,7 @@ public class CustomerDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Customer not found"));
         return User.withUsername(customer.getEmail())
                 .password(customer.getPasswordHash())
+                .accountLocked(customer.isLocked())
                 .roles("CUSTOMER")
                 .build();
     }

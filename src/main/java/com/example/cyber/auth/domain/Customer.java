@@ -13,6 +13,8 @@ public class Customer {
     private String email;
     private String passwordHash;
     private Instant createdAt;
+    private int failedLoginAttempts;
+    private Instant lockedUntil;
 
     protected Customer() {}
 
@@ -26,4 +28,11 @@ public class Customer {
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
     public Instant getCreatedAt() { return createdAt; }
+    public boolean isLocked() { return lockedUntil != null && lockedUntil.isAfter(Instant.now()); }
+    public int getFailedLoginAttempts() { return failedLoginAttempts; }
+    public void recordFailedLogin() {
+        failedLoginAttempts++;
+        if (failedLoginAttempts >= 5) lockedUntil = Instant.now().plusSeconds(900);
+    }
+    public void recordSuccessfulLogin() { failedLoginAttempts = 0; lockedUntil = null; }
 }
