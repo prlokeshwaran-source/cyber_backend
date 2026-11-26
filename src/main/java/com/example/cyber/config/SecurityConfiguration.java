@@ -18,7 +18,7 @@ import java.util.List;
 public class SecurityConfiguration {
     @Bean
     CorsConfigurationSource corsConfigurationSource(
-            @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}") List<String> allowedOrigins) {
+            @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,https://cyber-frontend-nu.vercel.app/}") List<String> allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
