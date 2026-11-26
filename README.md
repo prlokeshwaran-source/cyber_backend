@@ -34,7 +34,7 @@ On macOS or Linux:
 
 The application listens on port `8080` by default (or the `PORT` value supplied by Render) and persists customers, accounts, and transfers in MongoDB. Protected endpoints currently use HTTP Basic with the registered email and password. JWT authentication is not implemented yet; `JWT_SECRET` is reserved for that addition. Use HTTPS outside local development. Transfers require an Atlas replica set so MongoDB multi-document transactions are available.
 
-Account and transaction endpoints also require a trusted device. Send a persistent random `X-Device-Id` value (at least 32 characters; use 32 random bytes encoded as hex). A new device receives HTTP 403 and triggers a one-time approval code email. Submit the emailed challenge ID and code to `/api/v1/auth/device-approvals`, with `approve: true` to trust it or `approve: false` to deny it. Codes expire after 10 minutes and five incorrect attempts disable a challenge. Configure `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, and `APP_SECURITY_EMAIL_FROM` to send approval emails.
+Account and transaction endpoints also require a trusted device. Send a persistent random `X-Device-Id` value (at least 32 characters; use 32 random bytes encoded as hex) on every account and transaction request. A new device receives HTTP 403 and triggers a one-time approval code email. Submit the emailed challenge ID and code to `/api/v1/auth/device-approvals`, with `approve: true` to trust it or `approve: false` to deny it. Codes expire after 10 minutes and five incorrect attempts disable a challenge. Configure `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, and `APP_SECURITY_EMAIL_FROM` to send approval emails.
 
 ### Deploy on Render with Docker
 
@@ -76,6 +76,8 @@ GET  /api/v1/accounts/{accountId}
 
 {"currency":"INR"}
 ```
+
+Include `Authorization` and `X-Device-Id` headers with each account request. Generate the device ID randomly once per device and store it client-side; do not use a fixed public value.
 
 Transfers, deposits, withdrawals, and transaction history require HTTP Basic authentication. Supply a stable, unique `Idempotency-Key` for each intended money movement and reuse it for retries:
 
