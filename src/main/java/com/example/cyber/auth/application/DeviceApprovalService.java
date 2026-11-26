@@ -33,12 +33,20 @@ public class DeviceApprovalService {
     public void requestApproval(String email, String deviceId, String ip) {
         String deviceHash = digest(deviceId);
         var previous = approvals.findFirstByEmailAndDeviceHashOrderByExpiresAtDesc(email, deviceHash);
-        if (previous.isPresent() && previous.get().getExpiresAt().isAfter(Instant.now())
-                && ("PENDING".equals(previous.get().getStatus()) || "DENIED".equals(previous.get().getStatus()))) return;
+        Instant now = Instant.now();
+        if (previous.isPresent() && previous.get().getExpiresAt().isAfter(now)
+                && "DENIED".equals(previous.get().getStatus())) return;
+        if (previous.isPresent() && previous.get().getExpiresAt().isAfter(now)
+                && "PENDING".equals(previous.get().getStatus())
+                && previous.get().getLastSentAt() != null
+                && previous.get().getLastSentAt().plusSeconds(60).isAfter(now)) return;
 
         String code = String.format("%08d", RANDOM.nextInt(100_000_000));
-        Instant expiry = Instant.now().plusSeconds(600);
-        DeviceApproval approval = approvals.save(new DeviceApproval(digest(code), email, deviceHash, ip, expiry));
+        Instant expiry = now.plusSeconds(600);
+        DeviceApproval approval = previous.isPresent() && "PENDING".equals(previous.get().getStatus())
+                ? previous.get() : new DeviceApproval(digest(code), email, deviceHash, ip, expiry);
+        if (previous.isPresent() && approval == previous.get()) approval.refreshCode(digest(code), expiry);
+        approval = approvals.save(approval);
         try {
             emailSender.sendDeviceApproval(email, approval.getId(), code, ip, expiry.toString());
         } catch (RuntimeException exception) {

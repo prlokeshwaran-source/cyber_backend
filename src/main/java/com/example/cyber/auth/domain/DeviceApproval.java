@@ -13,6 +13,7 @@ public class DeviceApproval {
     private String deviceHash;
     private String requesterIp;
     private Instant expiresAt;
+    private Instant lastSentAt;
     private String status;
     private int failedAttempts;
 
@@ -24,6 +25,7 @@ public class DeviceApproval {
         this.deviceHash = deviceHash;
         this.requesterIp = requesterIp;
         this.expiresAt = expiresAt;
+        this.lastSentAt = Instant.now();
         this.status = "PENDING";
     }
     public String getEmail() { return email; }
@@ -32,8 +34,16 @@ public class DeviceApproval {
     public String getCodeHash() { return codeHash; }
     public String getRequesterIp() { return requesterIp; }
     public Instant getExpiresAt() { return expiresAt; }
+    public Instant getLastSentAt() { return lastSentAt; }
     public String getStatus() { return status; }
     public int getFailedAttempts() { return failedAttempts; }
     public void failAttempt() { failedAttempts++; if (failedAttempts >= 5) status = "DENIED"; }
     public void decide(boolean approved) { status = approved ? "APPROVED" : "DENIED"; }
+    public void refreshCode(String newCodeHash, Instant newExpiry) {
+        codeHash = newCodeHash;
+        expiresAt = newExpiry;
+        lastSentAt = Instant.now();
+        failedAttempts = 0;
+        status = "PENDING";
+    }
 }
