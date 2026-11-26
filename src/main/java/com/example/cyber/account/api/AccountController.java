@@ -5,7 +5,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/accounts")
 public class AccountController {
+    private static final String PUBLIC_OWNER = "public";
     private final AccountService accountService;
 
     public AccountController(AccountService accountService) {
@@ -25,18 +25,17 @@ public class AccountController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AccountResponse create(Authentication authentication,
-                                  @Valid @RequestBody CreateAccountRequest request) {
-        return accountService.create(authentication.getName(), request);
+    public AccountResponse create(@Valid @RequestBody CreateAccountRequest request) {
+        return accountService.create(PUBLIC_OWNER, request);
     }
 
     @GetMapping
-    public List<AccountResponse> list(Authentication authentication) {
-        return accountService.listForOwner(authentication.getName());
+    public List<AccountResponse> list() {
+        return accountService.listForOwner(PUBLIC_OWNER);
     }
 
     @GetMapping("/{accountId}")
-    public AccountResponse get(Authentication authentication, @PathVariable UUID accountId) {
-        return accountService.getForOwner(authentication.getName(), accountId);
+    public AccountResponse get(@PathVariable UUID accountId) {
+        return accountService.getForOwner(PUBLIC_OWNER, accountId);
     }
 }

@@ -40,6 +40,7 @@ Create a **Web Service** from this repository and choose **Docker** as the runti
 
 - `MONGODB_URI`: your MongoDB Atlas connection string.
 - `JWT_SECRET`: a randomly generated secret of at least 32 bytes, even though JWT authentication is not active yet.
+- `CORS_ALLOWED_ORIGINS`: optional comma-separated frontend origins allowed to call the API. Include the scheme and port if needed, and do not add a trailing slash. Defaults include local development and `https://cyber-frontend-nu.vercel.app`.
 
 Keep both values in Render's environment settings; do not put secrets in the Dockerfile or commit them to Git. Set Atlas network access to permit connections from the Render service. Use a replica set compatible with MongoDB transactions for transfers.
 
@@ -54,7 +55,7 @@ Content-Type: application/json
 {"email":"person@example.com","password":"use-a-long-unique-password"}
 ```
 
-Create and list accounts (HTTP Basic authentication required):
+Create and list accounts (public, no login required):
 
 ```http
 POST /api/v1/accounts
@@ -64,7 +65,7 @@ GET  /api/v1/accounts/{accountId}
 {"currency":"INR"}
 ```
 
-Transfer between accounts (the source must belong to the authenticated customer; both accounts must use the same currency):
+Transfer between accounts (HTTP Basic authentication required; the source must belong to the authenticated customer; both accounts must use the same currency):
 
 ```http
 POST /api/v1/transactions/transfers
@@ -77,6 +78,8 @@ POST /api/v1/transactions/transfers
 ```
 
 Deposits are omitted because real deposits must reconcile with a trusted funding provider. MFA, refresh tokens, idempotency keys, a production database, and a complete immutable ledger are also not implemented. Do not use this starter to hold real funds.
+
+Account endpoints are public. All callers share the same `public` account owner, so anyone can create, list, and view those accounts. This is suitable only for a demo; do not deploy it with real or sensitive account data.
 
 ### Package the application
 
