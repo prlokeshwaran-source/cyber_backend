@@ -42,9 +42,22 @@ Create a **Web Service** from this repository and choose **Docker** as the runti
 
 - `MONGODB_URI`: your MongoDB Atlas connection string.
 - `JWT_SECRET`: a randomly generated secret of at least 32 bytes, even though JWT authentication is not active yet.
+- `TRANSACTION_SIGNING_PRIVATE_KEY_BASE64`: Base64-encoded PKCS#8 P-256 private key. Keep this secret.
+- `TRANSACTION_SIGNING_PUBLIC_KEY_BASE64`: Base64-encoded X.509 P-256 public key.
+- `TRANSACTION_SIGNING_KEY_ID`: key identifier, for example `northstar-p256-v1`.
 - `CORS_ALLOWED_ORIGINS`: optional comma-separated frontend origins allowed to call the API. Include the scheme and port if needed, and do not add a trailing slash. Defaults include local development and `https://cyber-frontend-nu.vercel.app`.
 
-Keep both values in Render's environment settings; do not put secrets in the Dockerfile or commit them to Git. Set Atlas network access to permit connections from the Render service. Use a replica set compatible with MongoDB transactions for transfers.
+Keep secrets in Render's environment settings; do not put them in the Dockerfile or commit them to Git. Set Atlas network access to permit connections from the Render service. Use a replica set compatible with MongoDB transactions for transfers.
+
+Generate an ECDSA P-256 key pair locally with OpenSSL, then copy only the Base64 outputs into Render environment variables:
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out signing-key.pem
+openssl pkcs8 -topk8 -nocrypt -in signing-key.pem -outform DER -out signing-private.der
+openssl pkey -in signing-key.pem -pubout -outform DER -out signing-public.der
+```
+
+In PowerShell, Base64-encode the DER files with `[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\signing-private.der"))` and the equivalent `signing-public.der` command. Store the private-key output as a Render secret. Do not commit `signing-key.pem` or either DER file. Money movement fails closed with HTTP 503 until a matching key pair is configured.
 
 ## Available API
 
@@ -94,7 +107,9 @@ GET  /api/v1/transactions
 
 The deposit route directly credits a demo balance. It is not connected to a funding provider and must not be exposed as a real-money deposit flow. URL risk checks are available at `POST /api/v1/security/url-checks` with `{"url":"https://example.com"}`; they are heuristic and do not fetch or guarantee the safety of a URL. Five failed authentication attempts temporarily lock the customer account for 15 minutes.
 
-Transfer, deposit, and withdrawal retries are idempotent: repeating a request with the same key and same details returns the original response; reusing that key for different details returns HTTP 409. Account writes use optimistic version checks and return HTTP 409 if a concurrent update wins. The deposit route is a demo credit operation; production deposits require a trusted funding provider and reconciliation. TOTP/MFA, JWT and refresh tokens, recovery, beneficiary controls, digital signatures, encryption key management, fraud review workflows, and production audit/monitoring are not implemented. Do not use this starter to hold real funds.
+Every new transfer, deposit, and withdrawal is signed by the backend using ECDSA P-256 with SHA-256 (`SHA256withECDSA`). The canonical signed fields are transaction version, ID, type, source account ID, destination account ID, initiating customer, amount normalized to two decimal places, currency, and creation time. The transaction response includes the Base64 signature, algorithm, and key ID. Fetch the public key at `GET /api/v1/security/transaction-signing-key`; verify a stored transaction at `GET /api/v1/transactions/{transactionId}/verify` (authenticated and limited to the initiating customer). This proves the configured backend key signed those transaction fields; it is not an individual customer's private-key signature. Keep the private key secret. Verification uses the currently configured key pair, so key rotation needs a trusted key history before old signatures can continue to verify.
+
+Transfer, deposit, and withdrawal retries are idempotent: repeating a request with the same key and same details returns the original response; reusing that key for different details returns HTTP 409. Account writes use optimistic version checks and return HTTP 409 if a concurrent update wins. The deposit route is a demo credit operation; production deposits require a trusted funding provider and reconciliation. TOTP/MFA, JWT and refresh tokens, recovery, beneficiary controls, managed encryption keys, fraud review workflows, and production audit/monitoring are not implemented. Do not use this starter to hold real funds.
 
 Account endpoints require authentication and only expose accounts owned by the authenticated customer.
 
