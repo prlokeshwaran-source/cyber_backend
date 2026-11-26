@@ -32,7 +32,16 @@ On macOS or Linux:
 ./mvnw spring-boot:run
 ```
 
-The application listens on port `8080` and persists customers, accounts, and transfers in MongoDB. Protected endpoints use HTTP Basic with the registered email and password. Use HTTPS outside local development. Transfers require an Atlas replica set so MongoDB multi-document transactions are available.
+The application listens on port `8080` by default (or the `PORT` value supplied by Render) and persists customers, accounts, and transfers in MongoDB. Protected endpoints currently use HTTP Basic with the registered email and password. JWT authentication is not implemented yet; `JWT_SECRET` is reserved for that addition. Use HTTPS outside local development. Transfers require an Atlas replica set so MongoDB multi-document transactions are available.
+
+### Deploy on Render with Docker
+
+Create a **Web Service** from this repository and choose **Docker** as the runtime. Render will build the root `Dockerfile` and provide `PORT` at runtime. Add these environment variables in the Render service settings:
+
+- `MONGODB_URI`: your MongoDB Atlas connection string.
+- `JWT_SECRET`: a randomly generated secret of at least 32 bytes, even though JWT authentication is not active yet.
+
+Keep both values in Render's environment settings; do not put secrets in the Dockerfile or commit them to Git. Set Atlas network access to permit connections from the Render service. Use a replica set compatible with MongoDB transactions for transfers.
 
 ## Available API
 
