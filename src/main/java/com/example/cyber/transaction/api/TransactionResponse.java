@@ -8,4 +8,4 @@ import java.util.UUID;
 public record TransactionResponse(String transactionId, TransactionType type, UUID sourceAccountId,
                                  UUID destinationAccountId, String initiatedBy, BigDecimal amount, String currency,
                                  Instant createdAt, String signatureVersion, String signatureAlgorithm, String signingKeyId,
-                                 String signature) {}
+                                 String signature, String customerSigningKeyId, String customerSignature) {}

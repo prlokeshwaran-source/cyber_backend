@@ -22,6 +22,13 @@ public class BankTransaction {
     private String signatureAlgorithm;
     private String signingKeyId;
     private String signature;
+    private String customerSigningKeyId;
+    private String customerSignature;
+    private String customerPublicKeyBase64;
+    private String customerSigningType;
+    private UUID customerSigningSourceAccountId;
+    private UUID customerSigningDestinationAccountId;
+    private String customerSigningOperationId;
 
     protected BankTransaction() {}
 
@@ -49,6 +56,24 @@ public class BankTransaction {
     public String getSignatureAlgorithm() { return signatureAlgorithm; }
     public String getSigningKeyId() { return signingKeyId; }
     public String getSignature() { return signature; }
+    public String getCustomerSigningKeyId() { return customerSigningKeyId; }
+    public String getCustomerSignature() { return customerSignature; }
+    public String getCustomerPublicKeyBase64() { return customerPublicKeyBase64; }
+    public String getCustomerSigningType() { return customerSigningType; }
+    public UUID getCustomerSigningSourceAccountId() { return customerSigningSourceAccountId; }
+    public UUID getCustomerSigningDestinationAccountId() { return customerSigningDestinationAccountId; }
+    public String getCustomerSigningOperationId() { return customerSigningOperationId; }
+
+    public void attachCustomerSignature(String keyId, String signature, String publicKeyBase64,
+            String signedType, UUID signedSourceAccountId, UUID signedDestinationAccountId, String operationId) {
+        this.customerSigningKeyId = keyId;
+        this.customerSignature = signature;
+        this.customerPublicKeyBase64 = publicKeyBase64;
+        this.customerSigningType = signedType;
+        this.customerSigningSourceAccountId = signedSourceAccountId;
+        this.customerSigningDestinationAccountId = signedDestinationAccountId;
+        this.customerSigningOperationId = operationId;
+    }
 
     public void attachSignature(String version, String algorithm, String keyId, String signature) {
         this.signatureVersion = version;

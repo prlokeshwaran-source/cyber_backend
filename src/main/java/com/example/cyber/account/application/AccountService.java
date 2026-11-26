@@ -14,28 +14,45 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.cyber.security.signature.TransactionSignatureService;
+import com.example.cyber.security.signature.CustomerTransactionSignatureService;
+import com.example.cyber.auth.domain.CustomerSigningKey;
 
 @Service
 public class AccountService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final TransactionSignatureService signatureService;
+    private final CustomerTransactionSignatureService customerSignatureService;
 
     public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository,
-                          TransactionSignatureService signatureService) {
+                          TransactionSignatureService signatureService,
+                          CustomerTransactionSignatureService customerSignatureService) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.signatureService = signatureService;
+        this.customerSignatureService = customerSignatureService;
     }
 
     @Transactional
     public AccountResponse create(String ownerEmail, CreateAccountRequest request) {
         String currency = request.currency() == null ? "INR" : request.currency();
         BigDecimal initialAmount = request.initialAmount() == null ? BigDecimal.ZERO : request.initialAmount();
+        CustomerSigningKey customerKey = null;
+        if (initialAmount.signum() > 0) {
+            if (request.customerSigningKeyId() == null || request.customerSignature() == null
+                    || request.signingNonce() == null) {
+                throw new com.example.cyber.security.signature.CustomerSignatureException();
+            }
+            customerKey = customerSignatureService.verifyRequest(ownerEmail, request.customerSigningKeyId(),
+                    request.customerSignature(), "OPENING_DEPOSIT", null, null, initialAmount,
+                    currency, request.signingNonce());
+        }
         BankAccount account = accountRepository.save(new BankAccount(ownerEmail, currency, initialAmount));
         if (initialAmount.signum() > 0) {
             BankTransaction openingDeposit = new BankTransaction(null, account.getPublicId(), ownerEmail,
                     initialAmount, currency, TransactionType.DEPOSIT);
+            openingDeposit.attachCustomerSignature(customerKey.getKeyId(), request.customerSignature(),
+                    customerKey.getPublicKeyBase64(), "OPENING_DEPOSIT", null, null, request.signingNonce());
             signatureService.sign(openingDeposit);
             transactionRepository.save(openingDeposit);
         }

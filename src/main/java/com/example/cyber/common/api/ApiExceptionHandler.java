@@ -14,6 +14,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.dao.DataAccessException;
 import com.example.cyber.security.signature.TransactionSigningUnavailableException;
+import com.example.cyber.security.signature.CustomerSignatureException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -67,6 +68,11 @@ public class ApiExceptionHandler {
     ProblemDetail handleSigningUnavailable(TransactionSigningUnavailableException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
                 "Transaction signing keys are not configured; money movement is disabled");
+    }
+
+    @ExceptionHandler(CustomerSignatureException.class)
+    ProblemDetail handleInvalidCustomerSignature(CustomerSignatureException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

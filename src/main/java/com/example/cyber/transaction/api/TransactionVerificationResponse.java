@@ -1,4 +1,6 @@
 package com.example.cyber.transaction.api;
 
 public record TransactionVerificationResponse(String transactionId, boolean valid,
-                                              String signatureVersion, String signatureAlgorithm, String signingKeyId) {}
+                                              boolean backendSignatureValid, boolean customerSignatureValid,
+                                              String signatureVersion, String signatureAlgorithm, String signingKeyId,
+                                              String customerSigningKeyId) {}

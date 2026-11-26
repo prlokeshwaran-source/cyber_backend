@@ -25,7 +25,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class TransactionSignatureService {
     public static final String ALGORITHM = "SHA256withECDSA";
-    public static final String CANONICAL_VERSION = "northstar-transaction-v1";
+    public static final String CANONICAL_VERSION = "northstar-transaction-v2";
+    private static final String PREVIOUS_CANONICAL_VERSION = "northstar-transaction-v1";
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
     private final String keyId;
@@ -71,7 +72,8 @@ public class TransactionSignatureService {
     public boolean verify(BankTransaction transaction) {
         requireConfigured();
         if (!ALGORITHM.equals(transaction.getSignatureAlgorithm())
-                || !CANONICAL_VERSION.equals(transaction.getSignatureVersion())
+                || !(CANONICAL_VERSION.equals(transaction.getSignatureVersion())
+                || PREVIOUS_CANONICAL_VERSION.equals(transaction.getSignatureVersion()))
                 || !keyId.equals(transaction.getSigningKeyId())
                 || transaction.getSignature() == null) return false;
         try {
@@ -125,7 +127,7 @@ public class TransactionSignatureService {
 
     /** Newline-delimited UTF-8 fields in this fixed order; nullable account IDs are empty. */
     private static byte[] canonicalBytes(BankTransaction transaction, String version) {
-        return String.join("\n",
+        String canonical = String.join("\n",
                 version,
                 transaction.getId(),
                 transaction.getType().name(),
@@ -134,9 +136,19 @@ public class TransactionSignatureService {
                 transaction.getInitiatedBy(),
                 transaction.getAmount().setScale(2, RoundingMode.UNNECESSARY).toPlainString(),
                 transaction.getCurrency(),
-                transaction.getCreatedAt().truncatedTo(ChronoUnit.MILLIS).toString())
-                .getBytes(StandardCharsets.UTF_8);
+                transaction.getCreatedAt().truncatedTo(ChronoUnit.MILLIS).toString());
+        if (CANONICAL_VERSION.equals(version)) {
+            canonical += "\n" + value(transaction.getCustomerSigningKeyId())
+                    + "\n" + value(transaction.getCustomerPublicKeyBase64())
+                    + "\n" + value(transaction.getCustomerSignature())
+                    + "\n" + value(transaction.getCustomerSigningType())
+                    + "\n" + value(transaction.getCustomerSigningSourceAccountId())
+                    + "\n" + value(transaction.getCustomerSigningDestinationAccountId())
+                    + "\n" + value(transaction.getCustomerSigningOperationId());
+        }
+        return canonical.getBytes(StandardCharsets.UTF_8);
     }
 
     private static String value(UUID value) { return value == null ? "" : value.toString(); }
+    private static String value(String value) { return value == null ? "" : value; }
 }
