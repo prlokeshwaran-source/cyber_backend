@@ -16,6 +16,7 @@ import com.example.cyber.transaction.infrastructure.TransactionRepository;
 import com.example.cyber.transaction.domain.BankTransaction;
 import com.example.cyber.transaction.domain.TransactionType;
 import com.example.cyber.transaction.api.BalanceChangeRequest;
+import com.example.cyber.transaction.api.TransactionVerificationResponse;
 
 @RestController
 @RequestMapping("/api/v1/transactions")
@@ -58,6 +59,12 @@ public class TransactionController {
     @GetMapping
     public List<BankTransaction> history(Authentication authentication) {
         return transactionRepository.findByInitiatedByOrderByCreatedAtDesc(authentication.getName());
+    }
+
+    @GetMapping("/{transactionId}/verify")
+    public TransactionVerificationResponse verify(Authentication authentication,
+            @org.springframework.web.bind.annotation.PathVariable String transactionId) {
+        return transferService.verifyTransaction(authentication.getName(), transactionId);
     }
 
     private static void validateKey(String key) {

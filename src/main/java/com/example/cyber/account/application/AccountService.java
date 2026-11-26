@@ -13,15 +13,19 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.cyber.security.signature.TransactionSignatureService;
 
 @Service
 public class AccountService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final TransactionSignatureService signatureService;
 
-    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository) {
+    public AccountService(AccountRepository accountRepository, TransactionRepository transactionRepository,
+                          TransactionSignatureService signatureService) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
+        this.signatureService = signatureService;
     }
 
     @Transactional
@@ -30,8 +34,10 @@ public class AccountService {
         BigDecimal initialAmount = request.initialAmount() == null ? BigDecimal.ZERO : request.initialAmount();
         BankAccount account = accountRepository.save(new BankAccount(ownerEmail, currency, initialAmount));
         if (initialAmount.signum() > 0) {
-            transactionRepository.save(new BankTransaction(null, account.getPublicId(), ownerEmail,
-                    initialAmount, currency, TransactionType.DEPOSIT));
+            BankTransaction openingDeposit = new BankTransaction(null, account.getPublicId(), ownerEmail,
+                    initialAmount, currency, TransactionType.DEPOSIT);
+            signatureService.sign(openingDeposit);
+            transactionRepository.save(openingDeposit);
         }
         return toResponse(account);
     }

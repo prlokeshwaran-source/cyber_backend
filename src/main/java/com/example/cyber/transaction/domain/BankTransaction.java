@@ -5,6 +5,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
+import java.time.temporal.ChronoUnit;
 
 @Document("bank_transactions")
 public class BankTransaction {
@@ -17,18 +18,22 @@ public class BankTransaction {
     private String currency;
     private TransactionType type;
     private Instant createdAt;
+    private String signatureAlgorithm;
+    private String signingKeyId;
+    private String signature;
 
     protected BankTransaction() {}
 
     public BankTransaction(UUID sourceAccountId, UUID destinationAccountId, String initiatedBy,
                            BigDecimal amount, String currency, TransactionType type) {
+        this.id = UUID.randomUUID().toString();
         this.sourceAccountId = sourceAccountId;
         this.destinationAccountId = destinationAccountId;
         this.initiatedBy = initiatedBy;
         this.amount = amount;
         this.currency = currency;
         this.type = type;
-        this.createdAt = Instant.now();
+        this.createdAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     }
 
     public String getId() { return id; }
@@ -39,4 +44,13 @@ public class BankTransaction {
     public String getCurrency() { return currency; }
     public TransactionType getType() { return type; }
     public Instant getCreatedAt() { return createdAt; }
+    public String getSignatureAlgorithm() { return signatureAlgorithm; }
+    public String getSigningKeyId() { return signingKeyId; }
+    public String getSignature() { return signature; }
+
+    public void attachSignature(String algorithm, String keyId, String signature) {
+        this.signatureAlgorithm = algorithm;
+        this.signingKeyId = keyId;
+        this.signature = signature;
+    }
 }

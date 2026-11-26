@@ -13,6 +13,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.dao.DataAccessException;
+import com.example.cyber.security.signature.TransactionSigningUnavailableException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -60,6 +61,12 @@ public class ApiExceptionHandler {
     ProblemDetail handleDatabaseUnavailable(DataAccessException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
                 "Database service is temporarily unavailable");
+    }
+
+    @ExceptionHandler(TransactionSigningUnavailableException.class)
+    ProblemDetail handleSigningUnavailable(TransactionSigningUnavailableException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                "Transaction signing keys are not configured; money movement is disabled");
     }
 
     @ExceptionHandler(Exception.class)

@@ -11,6 +11,8 @@ import com.example.cyber.transaction.domain.TransactionType;
 import com.example.cyber.transaction.domain.TransferIdempotencyRecord;
 import com.example.cyber.transaction.infrastructure.TransactionRepository;
 import com.example.cyber.transaction.infrastructure.TransferIdempotencyRepository;
+import com.example.cyber.security.signature.TransactionSignatureService;
+import com.example.cyber.transaction.api.TransactionVerificationResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,12 +26,15 @@ public class TransferService {
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final TransferIdempotencyRepository idempotencyRepository;
+    private final TransactionSignatureService signatureService;
 
     public TransferService(AccountRepository accountRepository, TransactionRepository transactionRepository,
-                           TransferIdempotencyRepository idempotencyRepository) {
+                           TransferIdempotencyRepository idempotencyRepository,
+                           TransactionSignatureService signatureService) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.idempotencyRepository = idempotencyRepository;
+        this.signatureService = signatureService;
     }
 
     @Transactional
@@ -65,12 +70,15 @@ public class TransferService {
         destination.credit(request.amount());
         accountRepository.save(source);
         accountRepository.save(destination);
-        BankTransaction transaction = transactionRepository.save(new BankTransaction(
+        BankTransaction transaction = new BankTransaction(
                 source.getPublicId(), destination.getPublicId(), ownerEmail,
-                request.amount(), source.getCurrency(), TransactionType.TRANSFER));
+                request.amount(), source.getCurrency(), TransactionType.TRANSFER);
+        signatureService.sign(transaction);
+        transaction = transactionRepository.save(transaction);
         TransactionResponse response = new TransactionResponse(transaction.getId(), transaction.getType(),
                 transaction.getSourceAccountId(), transaction.getDestinationAccountId(),
-                transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt());
+                transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt(),
+                transaction.getSignatureAlgorithm(), transaction.getSigningKeyId(), transaction.getSignature());
         idempotencyRepository.save(new TransferIdempotencyRecord(recordId, requestHash, response));
         return response;
     }
@@ -90,15 +98,29 @@ public class TransferService {
         if (type == TransactionType.DEPOSIT) account.credit(request.amount());
         else account.debit(request.amount());
         accountRepository.save(account);
-        BankTransaction transaction = transactionRepository.save(new BankTransaction(
+        BankTransaction transaction = new BankTransaction(
                 type == TransactionType.DEPOSIT ? null : account.getPublicId(),
                 type == TransactionType.DEPOSIT ? account.getPublicId() : null,
-                ownerEmail, request.amount(), account.getCurrency(), type));
+                ownerEmail, request.amount(), account.getCurrency(), type);
+        signatureService.sign(transaction);
+        transaction = transactionRepository.save(transaction);
         TransactionResponse response = new TransactionResponse(transaction.getId(), transaction.getType(),
                 transaction.getSourceAccountId(), transaction.getDestinationAccountId(),
-                transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt());
+                transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt(),
+                transaction.getSignatureAlgorithm(), transaction.getSigningKeyId(), transaction.getSignature());
         idempotencyRepository.save(new TransferIdempotencyRecord(recordId, requestHash, response));
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public TransactionVerificationResponse verifyTransaction(String ownerEmail, String transactionId) {
+        BankTransaction transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found"));
+        if (!transaction.getInitiatedBy().equals(ownerEmail)) {
+            throw new ResourceNotFoundException("Transaction not found");
+        }
+        return new TransactionVerificationResponse(transaction.getId(), signatureService.verify(transaction),
+                transaction.getSignatureAlgorithm(), transaction.getSigningKeyId());
     }
 
     private static String digest(String value) {
