@@ -1,20 +1,14 @@
 package com.example.cyber.account.infrastructure;
 
 import com.example.cyber.account.domain.BankAccount;
-import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface AccountRepository extends JpaRepository<BankAccount, Long> {
+public interface AccountRepository extends MongoRepository<BankAccount, String> {
     List<BankAccount> findByOwnerEmailOrderByIdAsc(String ownerEmail);
     Optional<BankAccount> findByPublicIdAndOwnerEmail(UUID publicId, String ownerEmail);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select account from BankAccount account where account.publicId = :publicId")
-    Optional<BankAccount> findByPublicIdForUpdate(@Param("publicId") UUID publicId);
+    Optional<BankAccount> findByPublicId(UUID publicId);
 }

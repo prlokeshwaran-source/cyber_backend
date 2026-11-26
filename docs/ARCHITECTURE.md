@@ -2,7 +2,7 @@
 
 ## Purpose and status
 
-This document defines the structure for the secure banking backend. The current code implements customer registration, HTTP Basic authentication, account creation/listing, and same-currency transfers using JPA and an in-memory H2 database. Other modules and endpoints below are planned; they are not implemented yet.
+This document defines the structure for the secure banking backend. The current code implements customer registration, HTTP Basic authentication, account creation/listing, and same-currency transfers using Spring Data MongoDB. Other modules and endpoints below are planned; they are not implemented yet.
 
 The design uses a **modular monolith**: features live in separate packages in one deployable application. Keep dependencies pointing inward from HTTP adapters toward application logic and domain rules. Avoid making one giant service or allowing one feature to reach into another feature's persistence layer.
 
@@ -26,7 +26,7 @@ src/main/java/com/example/cyber/
 │   │   └── dto/                      # RegisterRequest, LoginRequest, AuthResponse
 │   ├── application/                  # RegisterUserUseCase, LoginUserUseCase, VerifyOtpUseCase
 │   ├── domain/                       # User, authentication policies, domain exceptions
-│   └── infrastructure/               # JPA entities, repositories, password/JWT adapters
+│   └── infrastructure/               # MongoDB documents, repositories, password/JWT adapters
 ├── account/
 │   ├── api/                          # AccountController and response DTOs
 │   ├── application/                  # CreateAccountUseCase, GetAccountUseCase

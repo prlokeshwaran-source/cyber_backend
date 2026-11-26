@@ -1,31 +1,20 @@
 package com.example.cyber.account.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Entity
-@Table(name = "bank_accounts")
+@Document("bank_accounts")
 public class BankAccount {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    @Column(nullable = false, unique = true, updatable = false)
+    private String id;
+    @Indexed(unique = true)
     private UUID publicId;
-    @Column(nullable = false, updatable = false)
     private String ownerEmail;
-    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal balance;
-    @Column(nullable = false, length = 3)
     private String currency;
-    @Version
-    private long version;
 
     protected BankAccount() {}
 
@@ -36,7 +25,7 @@ public class BankAccount {
         this.balance = BigDecimal.ZERO.setScale(2);
     }
 
-    public Long getId() { return id; }
+    public String getId() { return id; }
     public UUID getPublicId() { return publicId; }
     public String getOwnerEmail() { return ownerEmail; }
     public BigDecimal getBalance() { return balance; }

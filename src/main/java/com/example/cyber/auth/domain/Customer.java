@@ -1,19 +1,15 @@
 package com.example.cyber.auth.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Instant;
 
-@Entity
-@Table(name = "customers", uniqueConstraints = @UniqueConstraint(columnNames = "email"))
+@Document("customers")
 public class Customer {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
+    @Indexed(unique = true)
     private String email;
     private String passwordHash;
     private Instant createdAt;
@@ -26,7 +22,7 @@ public class Customer {
         this.createdAt = Instant.now();
     }
 
-    public Long getId() { return id; }
+    public String getId() { return id; }
     public String getEmail() { return email; }
     public String getPasswordHash() { return passwordHash; }
     public Instant getCreatedAt() { return createdAt; }

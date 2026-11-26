@@ -7,7 +7,7 @@ A Spring Boot banking backend starter with customer registration, account creati
 - Java 21
 - Spring Boot (version managed in `pom.xml`)
 - Maven Wrapper
-- Spring MVC, Spring Security, Spring Data JPA, and H2 for local development
+- Spring MVC, Spring Security, and Spring Data MongoDB
 
 ## Getting started
 
@@ -17,6 +17,8 @@ A Spring Boot banking backend starter with customer registration, account creati
 - Git (optional, for checkout/version control)
 
 ### Run the application
+
+Set the MongoDB Atlas connection string in `MONGODB_URI` before starting the application. Use the URI you provided, and rotate its password if it has been shared in an exposed channel.
 
 On Windows PowerShell:
 
@@ -30,7 +32,7 @@ On macOS or Linux:
 ./mvnw spring-boot:run
 ```
 
-The application listens on port `8080`. It uses an in-memory H2 database, so data is reset when the process stops. Protected endpoints use HTTP Basic with the registered email and password. Use HTTPS outside local development.
+The application listens on port `8080` and persists customers, accounts, and transfers in MongoDB. Protected endpoints use HTTP Basic with the registered email and password. Use HTTPS outside local development. Transfers require an Atlas replica set so MongoDB multi-document transactions are available.
 
 ## Available API
 
@@ -107,7 +109,7 @@ As features are added, keep code inside the existing base package `com.example.c
 
 ## Configuration and secrets
 
-Use environment variables or a secret manager for database credentials, JWT signing keys, encryption keys, and other secrets. Do not commit real credentials or production keys to `application.properties`. Add environment-specific configuration only when its values are safe to share.
+Use environment variables or a secret manager for database credentials, JWT signing keys, encryption keys, and other secrets. Set `MONGODB_URI` to the MongoDB connection string. Do not commit real credentials or production keys to `application.properties`.
 
 ## Development guidance
 

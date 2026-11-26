@@ -28,17 +28,10 @@ public class TransferService {
             throw new IllegalArgumentException("Source and destination accounts must differ");
         }
 
-        // Lock in stable UUID order to reduce deadlock risk for concurrent opposite transfers.
-        UUID firstId = request.sourceAccountId().compareTo(request.destinationAccountId()) < 0
-                ? request.sourceAccountId() : request.destinationAccountId();
-        UUID secondId = firstId.equals(request.sourceAccountId())
-                ? request.destinationAccountId() : request.sourceAccountId();
-        BankAccount first = accountRepository.findByPublicIdForUpdate(firstId)
+        BankAccount source = accountRepository.findByPublicId(request.sourceAccountId())
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-        BankAccount second = accountRepository.findByPublicIdForUpdate(secondId)
+        BankAccount destination = accountRepository.findByPublicId(request.destinationAccountId())
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
-        BankAccount source = first.getPublicId().equals(request.sourceAccountId()) ? first : second;
-        BankAccount destination = first.getPublicId().equals(request.destinationAccountId()) ? first : second;
 
         if (!source.getOwnerEmail().equals(ownerEmail)) {
             throw new ResourceNotFoundException("Account not found");
@@ -49,6 +42,8 @@ public class TransferService {
 
         source.debit(request.amount());
         destination.credit(request.amount());
+        accountRepository.save(source);
+        accountRepository.save(destination);
         BankTransaction transaction = transactionRepository.save(new BankTransaction(
                 source.getPublicId(), destination.getPublicId(), ownerEmail,
                 request.amount(), source.getCurrency(), TransactionType.TRANSFER));
