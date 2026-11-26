@@ -77,7 +77,8 @@ public class TransferService {
         transaction = transactionRepository.save(transaction);
         TransactionResponse response = new TransactionResponse(transaction.getId(), transaction.getType(),
                 transaction.getSourceAccountId(), transaction.getDestinationAccountId(),
-                transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt(),
+                transaction.getInitiatedBy(), transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt(),
+                transaction.getSignatureVersion(),
                 transaction.getSignatureAlgorithm(), transaction.getSigningKeyId(), transaction.getSignature());
         idempotencyRepository.save(new TransferIdempotencyRecord(recordId, requestHash, response));
         return response;
@@ -106,7 +107,8 @@ public class TransferService {
         transaction = transactionRepository.save(transaction);
         TransactionResponse response = new TransactionResponse(transaction.getId(), transaction.getType(),
                 transaction.getSourceAccountId(), transaction.getDestinationAccountId(),
-                transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt(),
+                transaction.getInitiatedBy(), transaction.getAmount(), transaction.getCurrency(), transaction.getCreatedAt(),
+                transaction.getSignatureVersion(),
                 transaction.getSignatureAlgorithm(), transaction.getSigningKeyId(), transaction.getSignature());
         idempotencyRepository.save(new TransferIdempotencyRecord(recordId, requestHash, response));
         return response;
@@ -120,7 +122,7 @@ public class TransferService {
             throw new ResourceNotFoundException("Transaction not found");
         }
         return new TransactionVerificationResponse(transaction.getId(), signatureService.verify(transaction),
-                transaction.getSignatureAlgorithm(), transaction.getSigningKeyId());
+                transaction.getSignatureVersion(), transaction.getSignatureAlgorithm(), transaction.getSigningKeyId());
     }
 
     private static String digest(String value) {

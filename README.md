@@ -97,7 +97,7 @@ Idempotency-Key: 8b3ed41a-49e1-4635-9bb3-e7bc0c0e7f08
 }
 ```
 
-Each successful money-movement response also contains `signatureAlgorithm`, `signingKeyId`, and `signature` (Base64-encoded ECDSA signature).
+Each successful money-movement response also contains `initiatedBy`, `signatureVersion`, `signatureAlgorithm`, `signingKeyId`, and `signature` (Base64-encoded ECDSA signature).
 
 ```http
 POST /api/v1/transactions/deposits
@@ -114,9 +114,9 @@ GET /api/v1/security/transaction-signing-key
 GET /api/v1/transactions/{transactionId}/verify
 ```
 
-The public-key endpoint returns `algorithm`, `keyId`, and `publicKeyBase64`. The verification endpoint returns `transactionId`, `valid`, `signatureAlgorithm`, and `signingKeyId`.
+The public-key endpoint returns `algorithm`, `keyId`, and `publicKeyBase64`. The verification endpoint returns `transactionId`, `valid`, `signatureVersion`, `signatureAlgorithm`, and `signingKeyId`.
 
-Every new transfer, deposit, and withdrawal is signed by the backend using ECDSA P-256 with SHA-256 (`SHA256withECDSA`). The canonical signed fields are transaction version, ID, type, source account ID, destination account ID, initiating customer, amount normalized to two decimal places, currency, and creation time. The transaction response includes the Base64 signature, algorithm, and key ID. Fetch the public key at `GET /api/v1/security/transaction-signing-key`; verify a stored transaction at `GET /api/v1/transactions/{transactionId}/verify` (authenticated and limited to the initiating customer). This proves the configured backend key signed those transaction fields; it is not an individual customer's private-key signature. Keep the private key secret. Verification uses the currently configured key pair, so key rotation needs a trusted key history before old signatures can continue to verify.
+Every new transfer, deposit, and withdrawal is signed by the backend using ECDSA P-256 with SHA-256 (`SHA256withECDSA`). The canonical signed fields are version, transaction ID, type, source account ID, destination account ID, initiating customer, amount normalized to two decimal places, currency, and creation time. The response includes the signed fields plus the Base64 signature, canonical version, algorithm, and key ID. Fetch the public key at `GET /api/v1/security/transaction-signing-key`; verify a stored transaction at `GET /api/v1/transactions/{transactionId}/verify` (authenticated and limited to the initiating customer). This proves the configured backend key signed those transaction fields; it is not an individual customer's private-key signature. Keep the private key secret. Verification uses the currently configured key pair, so key rotation needs a trusted key history before old signatures can continue to verify.
 
 Transfer, deposit, and withdrawal retries are idempotent: repeating a request with the same key and same details returns the original response; reusing that key for different details returns HTTP 409. Account writes use optimistic version checks and return HTTP 409 if a concurrent update wins. The deposit route is a demo credit operation; production deposits require a trusted funding provider and reconciliation. TOTP/MFA, JWT and refresh tokens, recovery, beneficiary controls, managed encryption keys, fraud review workflows, and production audit/monitoring are not implemented. Do not use this starter to hold real funds.
 

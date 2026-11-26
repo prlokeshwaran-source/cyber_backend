@@ -6,6 +6,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record TransactionResponse(String transactionId, TransactionType type, UUID sourceAccountId,
-                                 UUID destinationAccountId, BigDecimal amount, String currency,
-                                 Instant createdAt, String signatureAlgorithm, String signingKeyId,
+                                 UUID destinationAccountId, String initiatedBy, BigDecimal amount, String currency,
+                                 Instant createdAt, String signatureVersion, String signatureAlgorithm, String signingKeyId,
                                  String signature) {}

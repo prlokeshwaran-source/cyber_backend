@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class TransactionSignatureService {
     public static final String ALGORITHM = "SHA256withECDSA";
-    private static final String CANONICAL_VERSION = "northstar-transaction-v1";
+    public static final String CANONICAL_VERSION = "northstar-transaction-v1";
     private final PrivateKey privateKey;
     private final PublicKey publicKey;
     private final String keyId;
@@ -60,8 +60,9 @@ public class TransactionSignatureService {
         try {
             Signature signer = Signature.getInstance(ALGORITHM);
             signer.initSign(privateKey);
-            signer.update(canonicalBytes(transaction));
-            transaction.attachSignature(ALGORITHM, keyId, Base64.getEncoder().encodeToString(signer.sign()));
+            signer.update(canonicalBytes(transaction, CANONICAL_VERSION));
+            transaction.attachSignature(CANONICAL_VERSION, ALGORITHM, keyId,
+                    Base64.getEncoder().encodeToString(signer.sign()));
         } catch (GeneralSecurityException exception) {
             throw new IllegalStateException("Could not sign transaction", exception);
         }
@@ -70,12 +71,13 @@ public class TransactionSignatureService {
     public boolean verify(BankTransaction transaction) {
         requireConfigured();
         if (!ALGORITHM.equals(transaction.getSignatureAlgorithm())
+                || !CANONICAL_VERSION.equals(transaction.getSignatureVersion())
                 || !keyId.equals(transaction.getSigningKeyId())
                 || transaction.getSignature() == null) return false;
         try {
             Signature verifier = Signature.getInstance(ALGORITHM);
             verifier.initVerify(publicKey);
-            verifier.update(canonicalBytes(transaction));
+            verifier.update(canonicalBytes(transaction, transaction.getSignatureVersion()));
             return verifier.verify(Base64.getDecoder().decode(transaction.getSignature()));
         } catch (GeneralSecurityException | IllegalArgumentException exception) {
             return false;
@@ -122,9 +124,9 @@ public class TransactionSignatureService {
     }
 
     /** Newline-delimited UTF-8 fields in this fixed order; nullable account IDs are empty. */
-    private static byte[] canonicalBytes(BankTransaction transaction) {
+    private static byte[] canonicalBytes(BankTransaction transaction, String version) {
         return String.join("\n",
-                CANONICAL_VERSION,
+                version,
                 transaction.getId(),
                 transaction.getType().name(),
                 value(transaction.getSourceAccountId()),

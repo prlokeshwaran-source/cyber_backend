@@ -18,6 +18,7 @@ public class BankTransaction {
     private String currency;
     private TransactionType type;
     private Instant createdAt;
+    private String signatureVersion;
     private String signatureAlgorithm;
     private String signingKeyId;
     private String signature;
@@ -44,11 +45,13 @@ public class BankTransaction {
     public String getCurrency() { return currency; }
     public TransactionType getType() { return type; }
     public Instant getCreatedAt() { return createdAt; }
+    public String getSignatureVersion() { return signatureVersion; }
     public String getSignatureAlgorithm() { return signatureAlgorithm; }
     public String getSigningKeyId() { return signingKeyId; }
     public String getSignature() { return signature; }
 
-    public void attachSignature(String algorithm, String keyId, String signature) {
+    public void attachSignature(String version, String algorithm, String keyId, String signature) {
+        this.signatureVersion = version;
         this.signatureAlgorithm = algorithm;
         this.signingKeyId = keyId;
         this.signature = signature;
